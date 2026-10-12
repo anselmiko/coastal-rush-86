@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#11152d">
+<title>Coastal Rush '86</title>
+<style>
+:root{--cyan:#61f4e8;--pink:#ff4fa3;--cream:#fff4d6;--night:#11152d}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--night);color:var(--cream);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+button{font:inherit;color:inherit;border:1px solid #61f4e8a8;background:#11152de8;border-radius:10px;padding:12px 16px;cursor:pointer;box-shadow:0 0 18px #61f4e822}
+button:active{transform:translateY(1px);background:#263254}
+#game{display:block;width:100vw;height:100dvh;touch-action:none}
+#hud{position:fixed;inset:0;pointer-events:none;padding:calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 12px);display:none}
+.hudtop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;text-shadow:0 2px 4px #000}
+.stat{background:#11152dbb;border:1px solid #61f4e855;padding:8px 10px;border-radius:9px;min-width:84px}
+.stat small{display:block;color:var(--cyan);font-size:10px;letter-spacing:1px}
+.stat strong{font-size:clamp(14px,2.8vw,22px)}
+#hudbuttons{position:absolute;right:14px;top:calc(env(safe-area-inset-top) + 12px);display:flex;gap:7px;pointer-events:auto}
+#hudbuttons button{padding:8px 10px;font-size:12px}
+#circuitlabel{position:absolute;top:92px;left:50%;transform:translateX(-50%);font-size:11px;letter-spacing:2px;text-shadow:0 2px 5px #000;white-space:nowrap}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(180deg,#10132b55,#10132bcc)}
+.panel{width:min(560px,100%);max-height:92dvh;overflow:auto;background:#11152deF;border:1px solid #61f4e877;border-radius:20px;padding:clamp(20px,5vw,38px);box-shadow:0 0 70px #ff4fa322,0 20px 70px #0008;text-align:center}
+.kicker{color:var(--cyan);letter-spacing:4px;font-size:11px;margin-bottom:10px}
+h1{font-size:clamp(36px,8vw,68px);line-height:.92;margin:0;color:var(--cream);text-shadow:3px 3px 0 #ff4fa3,6px 6px 0 #2a6cba;letter-spacing:-3px}
+.subtitle{color:#c6c8e9;line-height:1.6;font-size:13px;margin:20px auto;max-width:400px}
+.circuits{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:22px 0}
+.circuit{padding:12px 5px;font-size:11px;line-height:1.5}
+.circuit.selected{background:#16404beF;border-color:var(--pink);box-shadow:0 0 18px #ff4fa333}
+.circuit span{display:block;font-size:20px;margin-bottom:6px}
+#start{width:100%;background:linear-gradient(90deg,#ff4fa3,#8b62ff);border:0;color:white;font-weight:bold;letter-spacing:2px;padding:16px;margin-top:4px}
+.help{font-size:11px;color:#a8accf;line-height:1.8;margin-top:17px}
+#mobileControls{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 22px);left:0;right:0;display:none;justify-content:space-between;padding:0 18px;pointer-events:none}
+.pad{display:flex;gap:10px;pointer-events:auto}
+.control{width:62px;height:62px;border-radius:50%;background:#11152d99;border:1px solid #ffffff88;backdrop-filter:blur(6px);font-size:23px;touch-action:none;user-select:none}
+.control.gas{border-color:var(--cyan);color:var(--cyan)}
+#toast{position:fixed;bottom:20%;left:50%;transform:translateX(-50%);font-size:12px;letter-spacing:2px;background:#11152ddd;padding:10px 15px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}
+@media(max-width:600px){.circuits{gap:5px}.circuit{font-size:10px}.panel{padding:22px 18px}.help{font-size:10px}#circuitlabel{top:88px}}
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="Coastal Rush 86 racing game"></canvas>
+<div id="hud">
+  <div class="hudtop">
+    <div class="stat"><small>SCORE</small><strong id="score">000000</strong></div>
+    <div class="stat"><small>SPEED</small><strong><span id="speed">000</span> <span style="font-size:10px">KM/H</span></strong></div>
+    <div class="stat"><small>TIME</small><strong id="time">90</strong></div>
+  </div>
+  <div id="hudbuttons"><button id="soundBtn" aria-label="Toggle sound">♪ ON</button><button id="pauseBtn">Ⅱ</button></div>
+  <div id="circuitlabel">PACIFIC COAST · STAGE 01</div>
+</div>
+<div id="mobileControls">
+  <div class="pad"><button class="control" data-control="left">←</button><button class="control" data-control="right">→</button></div>
+  <div class="pad"><button class="control" data-control="brake">▼</button><button class="control gas" data-control="gas">▲</button></div>
+</div>
+<div id="overlay">
+  <div class="panel" id="menuPanel">
+    <div class="kicker">ARCADE ROAD TRIP · EST. 1986</div>
+    <h1>COASTAL<br>RUSH '86</h1>
+    <p class="subtitle">Chase the sunset. Carve through coastal curves. Keep the rubber on the road.</p>
+    <div class="circuits">
+      <button class="circuit selected" data-stage="0"><span>🌴</span>01 · PACIFIC<br>COAST</button>
+      <button class="circuit" data-stage="1"><span>🌅</span>02 · SUNSET<br>STRIP</button>
+      <button class="circuit" data-stage="2"><span>🌊</span>03 · TURQUOISE<br>BAY</button>
+    </div>
+    <button id="start">START YOUR ENGINE ▶</button>
+    <div class="help">DESKTOP: ← → steer · ↑ accelerate · ↓ brake · P pause<br>MOBILE: use the on-screen controls<br><span id="best">BEST SCORE: 000000</span></div>
+  </div>
+  <div class="panel" id="endPanel" style="display:none">
+    <div class="kicker" id="endKicker">RACE COMPLETE</div><h1 id="endTitle">NICE DRIVE!</h1>
+    <p class="subtitle" id="endSummary">You chased the sunset.</p>
+    <button id="again" style="width:100%;background:linear-gradient(90deg,#ff4fa3,#8b62ff);border:0">RACE AGAIN ↻</button>
+    <button id="back" style="width:100%;margin-top:10px">BACK TO GARAGE</button>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+(() => {
+'use strict';
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+let W=innerWidth,H=innerHeight,dpr=1;
+function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=Math.floor(W*dpr);canvas.height=Math.floor(H*dpr);canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0)}
+addEventListener('resize',resize);resize();
+const stages=[
+ {name:'PACIFIC COAST',sky1:'#f78c8c',sky2:'#ffcf9e',sea:'#277fa2',hill:'#416a78',road:'#62616a',curve:.85},
+ {name:'SUNSET STRIP',sky1:'#422d76',sky2:'#ff6d8b',sea:'#293c77',hill:'#2e315e',road:'#4b4a65',curve:-1.15},
+ {name:'TURQUOISE BAY',sky1:'#4bb6ce',sky2:'#ffe0a3',sea:'#12a4b8',hill:'#267b75',road:'#66646b',curve:.35}
+];
+let selectedStage=0,playing=false,paused=false,finished=false,world=0,playerX=0,speed=0,score=0,timeLeft=90,last=0,spawnClock=0,traffic=[],soundOn=true,audio=null,osc=null,best=0,shake=0;
+const keys={left:false,right:false,gas:false,brake:false};
+const maxSpeed=230,roadWidth=1.15;
+function loadBest(){try{best=Number(localStorage.getItem('coastalRushBest')||0)}catch(e){best=0}$('best').textContent='BEST SCORE: '+String(best).padStart(6,'0')}
+loadBest();
+function audioStart(){if(!soundOn)return;try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();if(!osc){osc=audio.createOscillator();let gain=audio.createGain();osc.type='sawtooth';osc.frequency.value=70;gain.gain.value=.025;osc.connect(gain);gain.connect(audio.destination);osc.start();osc._gain=gain}}catch(e){}}
+function beep(freq=440,dur=.08,type='square'){if(!soundOn)return;audioStart();if(!audio)return;try{const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(.06,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+dur)}catch(e){}}
+function setSound(v){soundOn=v;$('soundBtn').textContent=soundOn?'♪ ON':'♪ OFF';if(!soundOn&&osc){try{osc.stop()}catch(e){}osc=null}if(soundOn)audioStart()}
+$('soundBtn').onclick=()=>setSound(!soundOn);
+function startGame(){audioStart();playing=true;paused=false;finished=false;world=0;playerX=0;speed=0;score=0;timeLeft=90;spawnClock=0;traffic=[];shake=0;$('overlay').style.display='none';$('hud').style.display='block';$('mobileControls').style.display='flex';$('circuitlabel').textContent=stages[selectedStage].name+' · STAGE 0'+(selectedStage+1);last=performance.now();beep(660,.12);requestAnimationFrame(loop)}
+function endGame(){playing=false;finished=true;$('hud').style.display='none';$('mobileControls').style.display='none';$('overlay').style.display='flex';$('menuPanel').style.display='none';$('endPanel').style.display='block';$('endKicker').textContent=timeLeft<=0?'TIME UP':'RACE COMPLETE';$('endTitle').textContent=timeLeft<=0?'SUNSET CALLS':'NICE DRIVE!';$('endSummary').textContent='Score: '+String(Math.floor(score)).padStart(6,'0')+' · Distance: '+(world/1000).toFixed(1)+' km';if(score>best){best=Math.floor(score);try{localStorage.setItem('coastalRushBest',best)}catch(e){}$('best').textContent='BEST SCORE: '+String(best).padStart(6,'0')}beep(520,.16)}
+$('start').onclick=startGame;$('again').onclick=startGame;$('back').onclick=()=>{$('endPanel').style.display='none';$('menuPanel').style.display='block';$('overlay').style.display='flex';finished=false};
+$('pauseBtn').onclick=()=>{if(!playing)return;paused=!paused;$('pauseBtn').textContent=paused?'▶':'Ⅱ';if(!paused){last=performance.now();requestAnimationFrame(loop)}else{toast('PAUSED · PRESS ▶ TO RESUME')}};
+function toast(t){$('toast').textContent=t;$('toast').style.opacity=1;setTimeout(()=>$('toast').style.opacity=0,900)}
+document.querySelectorAll('.circuit').forEach(b=>b.onclick=()=>{document.querySelectorAll('.circuit').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');selectedStage=+b.dataset.stage;beep(330,.05)});
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['arrowleft','arrowright','arrowup','arrowdown',' '].includes(k))e.preventDefault();if(k==='arrowleft'||k==='a')keys.left=true;if(k==='arrowright'||k==='d')keys.right=true;if(k==='arrowup'||k==='w')keys.gas=true;if(k==='arrowdown'||k==='s')keys.brake=true;if(k==='p'&&playing)$('pauseBtn').click();if(k==='m')setSound(!soundOn)});
+addEventListener('keyup',e=>{const k=e.key.toLowerCase();if(k==='arrowleft'||k==='a')keys.left=false;if(k==='arrowright'||k==='d')keys.right=false;if(k==='arrowup'||k==='w')keys.gas=false;if(k==='arrowdown'||k==='s')keys.brake=false});
+document.querySelectorAll('[data-control]').forEach(b=>{const key=b.dataset.control;const down=e=>{e.preventDefault();keys[key]=true;try{b.setPointerCapture(e.pointerId)}catch(_){}};const up=e=>{e.preventDefault();keys[key]=false};b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',()=>keys[key]=false)});
+function poly(points,color){ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);ctx.closePath();ctx.fill()}
+function lerp(a,b,t){return a+(b-a)*t}
+function drawBackground(s){const horizon=H*.43;const grad=ctx.createLinearGradient(0,0,0,horizon);grad.addColorStop(0,s.sky1);grad.addColorStop(1,s.sky2);ctx.fillStyle=grad;ctx.fillRect(0,0,W,horizon+1);
+ // sun
+ const sunX=W*(.72-.08*Math.sin(world/9000)),sunY=H*.22,sunR=Math.min(W,H)*.075;
+ ctx.save();ctx.beginPath();ctx.arc(sunX,sunY,sunR,0,Math.PI*2);ctx.clip();const sg=ctx.createLinearGradient(0,sunY-sunR,0,sunY+sunR);sg.addColorStop(0,'#fff4be');sg.addColorStop(1,'#ff8d9e');ctx.fillStyle=sg;ctx.fillRect(sunX-sunR,sunY-sunR,sunR*2,sunR*2);ctx.fillStyle=s.sky1;for(let y=sunY;y<sunY+sunR;y+=7)ctx.fillRect(sunX-sunR,y,sunR*2,2.5);ctx.restore();
+ // distant sea and mountains
+ ctx.fillStyle=s.sea;ctx.fillRect(0,horizon,W,H-horizon);
+ poly([[0,horizon+30],[W*.12,horizon-8],[W*.22,horizon+18],[W*.37,horizon-25],[W*.51,horizon+13],[W*.68,horizon-15],[W*.82,horizon+20],[W,horizon-4],[W,horizon+90],[0,horizon+90]],s.hill);
+ ctx.globalAlpha=.25;for(let y=horizon+16;y<horizon+100;y+=9){ctx.fillStyle='#e4f9ed';ctx.fillRect(0,y,W,1)}ctx.globalAlpha=1;
+}
+function roadCenter(z){const curve=stages[selectedStage].curve;return W*.5+Math.sin((world+z*1.6)/1800)*W*.13*curve+Math.sin((world+z*2.5)/700)*W*.025}
+function drawRoad(){const horizon=H*.43,baseY=H*1.05,s=stages[selectedStage],segments=100;for(let i=0;i<segments;i++){let t0=i/segments,t1=(i+1)/segments;let y0=horizon+(baseY-horizon)*t0*t0,y1=horizon+(baseY-horizon)*t1*t1;let z0=(1-t0),z1=(1-t1);let c0=roadCenter(z0*1600),c1=roadCenter(z1*1600);let half0=(W*.035+(W*.48)*t0*t0),half1=(W*.035+(W*.48)*t1*t1);let stripe=(Math.floor((world/95)+i/3)%2)===0;
+ ctx.fillStyle=stripe?'#f8e6d0':'#e6a2a7';ctx.beginPath();ctx.moveTo(c0-half0*1.13,y0);ctx.lineTo(c0+half0*1.13,y0);ctx.lineTo(c1+half1*1.13,y1);ctx.lineTo(c1-half1*1.13,y1);ctx.fill();
+ ctx.fillStyle=stripe?'#77747b':s.road;ctx.beginPath();ctx.moveTo(c0-half0,y0);ctx.lineTo(c0+half0,y0);ctx.lineTo(c1+half1,y1);ctx.lineTo(c1-half1,y1);ctx.fill();
+ if(Math.floor((world/110)+i/4)%2===0){ctx.strokeStyle='#fff1d6';ctx.lineWidth=Math.max(1,t1*4);ctx.beginPath();ctx.moveTo(c0-half0/3,y0);ctx.lineTo(c1-half1/3,y1);ctx.moveTo(c0+half0/3,y0);ctx.lineTo(c1+half1/3,y1);ctx.stroke()}
+ }
+ // roadside palm silhouettes
+ for(let i=0;i<9;i++){let z=((i/9+((world/850)%1))%1),t=1-z,y=horizon+(baseY-horizon)*t*t;let c=roadCenter(z*1600),half=W*.035+W*.48*t*t;for(const side of [-1,1]){let x=c+side*(half+20+t*70);if(y>horizon+4&&y<H*.95)drawPalm(x,y,t,side)}}
+}
+function drawPalm(x,y,t,side){let scale=.2+t*.95;ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.strokeStyle='#173d4a';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(side*8,-35,side*2,-90);ctx.stroke();ctx.fillStyle='#173d4a';for(let i=0;i<7;i++){let a=(-Math.PI*.95)+(i/6)*Math.PI*1.35;ctx.save();ctx.translate(side*2,-90);ctx.rotate(a);ctx.beginPath();ctx.ellipse(25,-4,37,7,-.2,0,Math.PI*2);ctx.fill();ctx.restore()}ctx.restore()}
+function drawCar(x,y,w,h,color,player=false){ctx.save();ctx.translate(x,y);if(player&&shake>0)ctx.rotate((Math.random()-.5)*.06*shake);ctx.fillStyle='#11152d';ctx.beginPath();ctx.ellipse(0,h*.45,w*.62,h*.16,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#171725';ctx.fillRect(-w*.48,-h*.18,w*.18,h*.42);ctx.fillRect(w*.30,-h*.18,w*.18,h*.42);
+ poly([[-w*.48,h*.28],[-w*.42,-h*.05],[-w*.28,-h*.42],[w*.28,-h*.42],[w*.42,-h*.05],[w*.48,h*.28]],color);
+ poly([[-w*.27,-h*.25],[-w*.19,-h*.4],[w*.19,-h*.4],[w*.27,-h*.25]],'#192c4b');
+ ctx.fillStyle='#b5f8f3';ctx.fillRect(-w*.29,-h*.01,w*.12,h*.07);ctx.fillRect(w*.17,-h*.01,w*.12,h*.07);
+ ctx.fillStyle='#ff405f';ctx.fillRect(-w*.38,h*.14,w*.15,h*.06);ctx.fillRect(w*.23,h*.14,w*.15,h*.06);
+ ctx.fillStyle='#f7f2d5';ctx.fillRect(-w*.1,h*.18,w*.2,h*.025);
+ if(player){ctx.fillStyle='#fff';ctx.globalAlpha=.22;ctx.fillRect(-w*.18,-h*.34,w*.36,h*.025);ctx.globalAlpha=1}
+ ctx.restore()}
+function drawTraffic(){for(const car of traffic){let t=car.z/1600;if(t<0||t>1)continue;let y=H*.43+(H*.62)*t*t,c=roadCenter(car.z),half=W*.035+W*.48*t*t,x=c+car.lane*half*.65,w=12+t*42,h=22+t*67;drawCar(x,y,w,h,car.color,false)}}
+function update(dt){if(paused)return;const s=stages[selectedStage];if(keys.gas)speed+=115*dt;else speed-=28*dt;if(keys.brake)speed-=145*dt;speed=Math.max(0,Math.min(maxSpeed,speed));const steering=(keys.right?1:0)-(keys.left?1:0);playerX+=steering*dt*(.9+speed/100)*1.1;playerX=Math.max(-1.35,Math.min(1.35,playerX));world+=speed*dt*5;score+=speed*dt*.16;timeLeft-=dt;if(osc&&audio){osc.frequency.setTargetAtTime(48+speed*.75,audio.currentTime,.08);osc._gain.gain.setTargetAtTime(soundOn?.018:0,audio.currentTime,.08)}
+ spawnClock+=dt;if(spawnClock>1.1&&speed>40){spawnClock=0;traffic.push({z:1500+Math.random()*400,lane:(Math.random()*1.6-.8),color:['#ff4fa3','#f4cb5e','#63d9c6','#e8edf7'][Math.floor(Math.random()*4)]})}
+ traffic.forEach(c=>c.z-=speed*dt*4.8);traffic=traffic.filter(c=>c.z>-80);
+ const px=W*.5+playerX*W*.33,py=H*.84,pw=Math.min(W*.105,74),ph=pw*1.55;
+ for(const c of traffic){if(c.z<95&&c.z>-10){let cx=roadCenter(c.z)+c.lane*(W*.48)*Math.pow(Math.max(.05,1-c.z/1600),2);if(Math.abs(px-cx)<pw*.63){speed*=.43;score=Math.max(0,score-200);c.z=-200;shake=1;beep(110,.18,'sawtooth');toast('CRASH! -200 POINTS')}}}
+ if(Math.abs(playerX)>1.02){speed=Math.max(0,speed-80*dt);shake=Math.min(1,shake+dt)}else shake=Math.max(0,shake-dt*2);
+ if(timeLeft<=0){timeLeft=0;endGame()}
+ $('score').textContent=String(Math.floor(score)).padStart(6,'0');$('speed').textContent=String(Math.floor(speed)).padStart(3,'0');$('time').textContent=String(Math.ceil(timeLeft)).padStart(2,'0');
+}
+function render(){const s=stages[selectedStage];drawBackground(s);drawRoad();drawTraffic();const px=W*.5+playerX*W*.33,py=H*.84,pw=Math.min(W*.105,74),ph=pw*1.55;drawCar(px,py,pw,ph,'#f23f78',true);if(Math.abs(playerX)>1.02){ctx.fillStyle='#ff4fa3';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.fillText('GET BACK ON THE ROAD!',W/2,H*.68)}}
+function loop(now){if(!playing||paused)return;const dt=Math.min((now-last)/1000,.04);last=now;update(dt);render();if(playing&&!paused)requestAnimationFrame(loop)}
+function idle(){if(!playing){world+=.12;render()}requestAnimationFrame(idle)}
+// draw a lively title-screen scene
+render();idle();
+})();
+</script>
+</body>
+</html>
